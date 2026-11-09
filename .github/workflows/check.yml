@@ -1,0 +1,65 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 1 * * 1"   # Mondays: the pinned download must still match
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax and lint
+        run: sh -n install.sh check-sums.sh && shellcheck install.sh check-sums.sh
+      - name: PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | ForEach-Object { $_.Message }; exit 1 }
+      - name: Pinned sums match the kubelogin release
+        run: sh check-sums.sh
+
+  # Install for real, with no sign-in (a person must approve that). Then check
+  # that `vaudit` runs and prints its usage (exit 2).
+  install-unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: VAUDIT_NO_LOGIN=1 VAUDIT_NO_RC=1 sh install.sh
+      - name: vaudit runs
+        run: |
+          set +e
+          "$HOME/.vaudit/bin/vaudit"
+          rc=$?
+          test "$rc" -eq 2
+          "$HOME/.vaudit/bin/kubelogin" --version
+
+  install-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        shell: pwsh
+        run: |
+          $env:VAUDIT_NO_LOGIN = '1'
+          $env:VAUDIT_NO_PATH = '1'
+          ./install.ps1
+      - name: vaudit runs
+        shell: pwsh
+        run: |
+          $bin = Join-Path $env:LOCALAPPDATA 'vaudit\bin'
+          & (Join-Path $bin 'vaudit.cmd')
+          if ($LASTEXITCODE -ne 2) { exit 1 }
+          & (Join-Path $bin 'kubelogin.exe') --version
+          exit 0
