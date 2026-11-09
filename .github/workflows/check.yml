@@ -44,6 +44,10 @@ jobs:
           rc=$?
           test "$rc" -eq 2
           "$HOME/.vaudit/bin/kubelogin" --version
+      - name: vaudit signout runs with no sign-in
+        run: |
+          "$HOME/.vaudit/bin/vaudit" signout | grep -qx "Signed out."
+          "$HOME/.vaudit/bin/vaudit" logout | grep -qx "Signed out."
 
   install-windows:
     runs-on: windows-latest
@@ -62,4 +66,6 @@ jobs:
           & (Join-Path $bin 'vaudit.cmd')
           if ($LASTEXITCODE -ne 2) { exit 1 }
           & (Join-Path $bin 'kubelogin.exe') --version
+          $out = & (Join-Path $bin 'vaudit.cmd') signout
+          if ($LASTEXITCODE -ne 0 -or $out -ne 'Signed out.') { "signout: $out"; exit 1 }
           exit 0

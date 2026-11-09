@@ -102,15 +102,15 @@ case "${1:-}" in
   token)
     get_token | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
     ;;
-  logout)
-    "$here/kubelogin" clean --token-cache-dir="$cache" >/dev/null
+  logout | signout)
+    "$here/kubelogin" clean --token-cache-dir="$cache" >/dev/null 2>&1
     echo "Signed out."
     ;;
   *)
-    echo "usage: vaudit login | token | logout" >&2
+    echo "usage: vaudit login | token | logout (or signout)" >&2
     echo "  login   sign in with Google (once a day)" >&2
     echo "  token   print a token for a script: curl -H \"Authorization: Bearer \$(vaudit token)\" ..." >&2
-    echo "  logout  forget the sign-in on this computer" >&2
+    echo "  logout  forget the sign-in on this computer (same as: signout)" >&2
     exit 2
     ;;
 esac
