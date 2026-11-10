@@ -102,15 +102,24 @@ case "${1:-}" in
   token)
     get_token | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
     ;;
-  logout)
-    "$here/kubelogin" clean --token-cache-dir="$cache" >/dev/null
-    echo "Signed out."
+  logout | signout)
+    # kubelogin's own lines are noise on success. On a failure they are the
+    # reason, so print them.
+    rc=0
+    out=$("$here/kubelogin" clean --token-cache-dir="$cache" 2>&1) || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      echo "Signed out."
+    else
+      printf '%s\n' "$out" >&2
+      echo "Sign-out failed. The sign-in may still be on this computer." >&2
+      exit "$rc"
+    fi
     ;;
   *)
-    echo "usage: vaudit login | token | logout" >&2
+    echo "usage: vaudit login | token | logout (or signout)" >&2
     echo "  login   sign in with Google (once a day)" >&2
     echo "  token   print a token for a script: curl -H \"Authorization: Bearer \$(vaudit token)\" ..." >&2
-    echo "  logout  forget the sign-in on this computer" >&2
+    echo "  logout  forget the sign-in on this computer (same as: signout)" >&2
     exit 2
     ;;
 esac

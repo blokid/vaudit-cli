@@ -26,7 +26,7 @@ Google, and approve the code.
 |---|---|
 | `vaudit login` | Sign in with Google. Once a day; a sign-in lasts 8 hours. |
 | `vaudit token` | Print a token for a script, with no browser. |
-| `vaudit logout` | Forget the sign-in on this computer. |
+| `vaudit logout` (or `vaudit signout`) | Forget the sign-in on this computer. |
 
 ```sh
 curl -H "Authorization: Bearer $(vaudit token)" \

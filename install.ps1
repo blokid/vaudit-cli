@@ -56,15 +56,26 @@ if /i "%~1"=="token" (
   "%KL%" %ARGS% | powershell -NoProfile -Command "($input | Out-String | ConvertFrom-Json).status.token"
   exit /b %ERRORLEVEL%
 )
-if /i "%~1"=="logout" (
-  "%KL%" clean --token-cache-dir="%CACHE%" >nul
-  echo Signed out.
-  exit /b 0
+if /i "%~1"=="signout" goto logout
+if /i "%~1"=="logout" goto logout
+goto usage
+:logout
+set "OUT=%TEMP%\vaudit-logout-%RANDOM%.txt"
+"%KL%" clean --token-cache-dir="%CACHE%" >"%OUT%" 2>&1
+if errorlevel 1 (
+  type "%OUT%" 1>&2
+  del "%OUT%" >nul 2>&1
+  echo Sign-out failed. The sign-in may still be on this computer. 1>&2
+  exit /b 1
 )
-echo usage: vaudit login ^| token ^| logout 1>&2
+del "%OUT%" >nul 2>&1
+echo Signed out.
+exit /b 0
+:usage
+echo usage: vaudit login ^| token ^| logout (or signout) 1>&2
 echo   login   sign in with Google (once a day) 1>&2
 echo   token   print a token for a script 1>&2
-echo   logout  forget the sign-in on this computer 1>&2
+echo   logout  forget the sign-in on this computer (same as: signout) 1>&2
 exit /b 2
 '@
 Set-Content -Encoding ASCII -Path (Join-Path $Bin 'vaudit.cmd') -Value $vaudit
