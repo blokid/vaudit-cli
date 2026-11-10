@@ -60,11 +60,17 @@ if /i "%~1"=="signout" goto logout
 if /i "%~1"=="logout" goto logout
 goto usage
 :logout
-(
-  "%KL%" clean --token-cache-dir="%CACHE%" >nul 2>&1
-  echo Signed out.
-  exit /b 0
+set "OUT=%TEMP%\vaudit-logout-%RANDOM%.txt"
+"%KL%" clean --token-cache-dir="%CACHE%" >"%OUT%" 2>&1
+if errorlevel 1 (
+  type "%OUT%" 1>&2
+  del "%OUT%" >nul 2>&1
+  echo Sign-out failed. The sign-in may still be on this computer. 1>&2
+  exit /b 1
 )
+del "%OUT%" >nul 2>&1
+echo Signed out.
+exit /b 0
 :usage
 echo usage: vaudit login ^| token ^| logout (or signout) 1>&2
 echo   login   sign in with Google (once a day) 1>&2
